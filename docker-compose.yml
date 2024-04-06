@@ -1,0 +1,32 @@
+version: "3"
+services:
+  ticket-db:
+    image: mysql
+    networks:
+      - ticket-network
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=db_ticket
+    volumes:
+      - dbdata:/data/db
+  ticket-process:
+    build:
+      context: ticket-process
+      dockerfile: dockerfile
+    image: johnnyhohohohohoho/ticket-process
+    networks:
+      - ticket-network
+  ticket-system:
+    build:
+      context: ticket-system
+      dockerfile: dockerfile
+    image: johnnyhohohohohoho/ticket-system
+    networks:
+      - ticket-network
+    depends_on:
+      - ticket-db
+networks:
+  ticket-network:
+# persistent inside docker env. Host computer has no access to it
+volumes:
+  dbdata:

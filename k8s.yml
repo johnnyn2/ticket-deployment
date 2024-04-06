@@ -1,0 +1,112 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ticket-process-app
+  labels:
+    app: ticket-process
+spec:
+  replicas: 1
+  selector:
+      matchLabels:
+        app: ticket-process
+  template:
+    metadata:
+      labels:
+        app: ticket-process
+    spec:
+      containers:
+        - name: ticket-process
+          image: 'johnnyhohohohohoho/ticket-process:latest'
+          ports:
+            - containerPort: 8080
+          env:
+            - name: server.port
+              value: "8080"
+            - name: ticket.system.url
+              value: "http://192.168.49.2/ticket-sc"
+            - name: ticket.system.validatePurchase
+              value: "/validate/purchase"
+            - name: ticket.system.validateAccount
+              value: "/validate/account"
+            - name: ticket.system.validateSeat
+              value: "/validate/seat"
+            - name: ticket.system.purchase
+              value: "/purchase/ticket"
+          imagePullPolicy: Always
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: ticket-process-service
+spec:
+  selector:
+    app: ticket-process
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ticket-system-app
+  labels:
+    app: ticket-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticket-system
+  template:
+    metadata:
+      labels:
+        app: ticket-system
+    spec:
+      containers:
+        - name: ticket-system
+          image: 'johnnyhohohohohoho/ticket-system:latest'
+          ports:
+            - containerPort: 8080
+          env:
+            - name: server.port
+              value: "8080"
+          imagePullPolicy: Always
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: ticket-system-service
+spec:
+  selector:
+    app: ticket-system
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ticket-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+    - http:
+        paths:
+          - pathType: ImplementationSpecific
+            path: /ticket-pc/(.*)
+            backend:
+              service:
+                name: ticket-process-service
+                port:
+                  number: 8080
+          - pathType: ImplementationSpecific
+            path: /ticket-sc/(.*)
+            backend:
+              service:
+                name: ticket-system-service
+                port:
+                  number: 8080
+---
+
